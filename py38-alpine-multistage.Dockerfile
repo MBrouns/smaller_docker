@@ -1,20 +1,23 @@
 FROM python:3.8-alpine AS builder
 
-RUN apk --update add gcc build-base freetype-dev libpng-dev openblas-dev
-RUN apk --no-cache add --virtual .builddeps g++ musl-dev
+COPY requirements.txt .
+RUN apk --update --no-cache add openblas-dev freetype-dev
+RUN apk --update --no-cache add --virtual .builddeps gcc build-base  g++ musl-dev  libpng-dev
+
 RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
 
-WORKDIR app
 COPY requirements.txt .
+RUN pip install --user -r requirements.txt
 
-RUN pip install -r requirements.txt
-
-RUN pip install cython==0.29.21
-RUN pip install scipy==1.5.2
-RUN pip install scikit-learn==0.22.1
+RUN pip install --user cython==0.29.21 scipy==1.5.2
+RUN pip install --user scikit-learn==0.22.1
+RUN pip uninstall -y cython
+RUN apk del --no-cache .builddeps
 
 FROM python:3.8-alpine AS runner
 WORKDIR app
+RUN apk --update --no-cache add openblas-dev freetype-dev
+
 COPY --from=builder /root/.local /root/.local
 
 COPY test.py .
